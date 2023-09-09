@@ -19,7 +19,7 @@ jobs:
       DEBIAN_VERSION: ${{matrix.DEBIAN_VERSION}}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           ref: dev
       - name: Patching Versions File
@@ -50,7 +50,7 @@ jobs:
     needs: test-and-build
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           ref: dev
       - name: Patching Versions File
