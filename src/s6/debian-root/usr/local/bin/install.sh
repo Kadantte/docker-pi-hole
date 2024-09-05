@@ -10,20 +10,22 @@ WEB_LOCAL_REPO=/var/www/html/admin
 setupVars=/etc/pihole/setupVars.conf
 
 detect_arch() {
-  DETECTED_ARCH=$(dpkg --print-architecture)
+  DETECTED_ARCH=$(arch)
   S6_ARCH=$DETECTED_ARCH
   case $DETECTED_ARCH in
-  amd64)
-    S6_ARCH="x86_64";;
   armel)
     S6_ARCH="armhf";;
-  armhf)
+  armv7l)
     S6_ARCH="armhf";;
-  arm64)
-    S6_ARCH="aarch64";;
-  i386)
-    S6_ARCH="i686";;
-esac
+  x86_64)
+    # arch returns x86_64 on linux/i386, causing the wrong s6-overlay to be downloaded
+    # fallback to dpkg to check the architecture and download the i686 s6-overlay if necessary
+    # see https://github.com/pi-hole/docker-pi-hole/issues/1524 for more information
+    ARCH_CHECK=$(dpkg --print-architecture)
+    if [ "$ARCH_CHECK" == "i386" ]; then
+      S6_ARCH="i686"
+    fi    
+  esac
 }
 
 
@@ -94,9 +96,15 @@ mv /etc/pihole/macvendor.db /macvendor.db
 
 
 ## Remove the default lighttpd unconfigured config:
-rm /etc/lighttpd/conf-enabled/99-unconfigured.conf
+if [ -f /etc/lighttpd/conf-enabled/99-unconfigured.conf ]; then
+  rm /etc/lighttpd/conf-enabled/99-unconfigured.conf
+fi
 ## Remove the default lighttpd placeholder page for good measure
-rm /var/www/html/index.lighttpd.html
+if [ -f /var/www/html/index.lighttpd.html ]; then
+  rm /var/www/html/index.lighttpd.html
+fi
+## Remove redundant directories created by the installer to reduce docker image size
+rm -rf /tmp/*
 
 if [ ! -f /.piholeFirstBoot ]; then
   touch /.piholeFirstBoot
